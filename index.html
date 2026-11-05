@@ -50,6 +50,8 @@ label{font-size:14px;color:var(--mut);display:block;margin-bottom:3px}
 .tank i{display:block;width:100%;transition:height .5s;background:var(--brand)}
 .tank i.almost{background:var(--warn)}.tank i.locked{background:var(--bad)}
 .cmp small{color:var(--mut);font-size:13px;min-height:20px}
+.cmp small.eta{font-size:12px;min-height:18px}
+.cmp small.eta.soon{color:var(--warn);font-weight:700}
 .lid{width:100%;color:#fff;padding:8px 4px}
 .lid:disabled{opacity:.45;cursor:not-allowed}
 .b-Wet{background:#2e7d32}.b-Dry{background:#1565c0}.b-Recyclable{background:#c46f00}.b-E-waste{background:#7b1fa2}
@@ -99,10 +101,10 @@ ol,ul{list-style:none;margin:0;padding:0}
   <div class="grid">
     <div class="stack">
       <div class="box">
-        <h2>Bin station</h2>
+        <h2>Bin station <small id="clk" style="font-weight:400;color:var(--mut);font-size:14px"></small></h2>
         <div class="lcd" id="lcd" role="status" aria-live="polite"><b>Tap your ID card</b><small>Choose a student below, then press Tap ID card.</small></div>
         <div class="pick">
-          <div><label for="stu">Student ID card</label><select id="stu"></select><div class="row2"><button class="go" id="tap">Tap ID card</button><button class="ghost" id="rm">Remove card</button></div></div>
+          <div><label for="stu">Student ID card</label><select id="stu"></select><div class="row2"><button class="go" id="tap">Tap ID card</button><button class="ghost" id="rm">Remove card</button><button class="ghost" id="vc" aria-pressed="true">Voice: On</button></div></div>
           <div><label for="itm">Item you are holding</label><select id="itm"></select><p style="color:var(--mut);font-size:13px;margin-top:6px">The bin’s sensor decides what the item really is. You only choose a lid.</p></div>
         </div>
         <div class="cmps" id="cmps"></div>
@@ -151,33 +153,40 @@ const CATS=["Wet","Dry","Recyclable","E-waste"],ICON={Wet:"🍃",Dry:"📄",Recy
 const BASE={Wet:5,Dry:3,Recyclable:10,"E-waste":25},CAP=150;
 const ITEMS=[["Banana peel","🍌","Wet",120],["Leftover rice","🍚","Wet",250],["Tea bag","🍵","Wet",40],["Chips wrapper","🍟","Dry",15],["Used tissue","🧻","Dry",10],["Ice cream stick","🍦","Dry",8],["Plastic bottle","🧴","Recyclable",25],["Aluminium can","🥫","Recyclable",15],["Old newspaper","📰","Recyclable",180],["Dead battery","🔋","E-waste",45],["Broken earphones","🎧","E-waste",30],["Old charger cable","🔌","E-waste",60]];
 const REW=[["Canteen snack coupon",80],["Free stationery pack",150],["Sapling planted in your name",250]];
-const BINS=["Canteen","Library","ECE Block","Hostel A"],KEY="smartbin_rewards_v3";
+const BINS=["Canteen","Library","ECE Block","Hostel A"],KEY="smartbin_rewards_v4";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function fresh(){const b={};BINS.forEach((n,i)=>{b[n]={};CATS.forEach((c,j)=>b[n][c]=0)});
+function fresh(){const b={},hs={};BINS.forEach((n,i)=>{b[n]={};hs[n]={};CATS.forEach((c,j)=>{b[n][c]=0;hs[n][c]=[[0,0]]})});
  return{students:[{id:"SB-1001",name:"Aarav",block:"CSE Block",pts:0,drops:0,g:0},{id:"SB-1002",name:"Meera",block:"ECE Block",pts:0,drops:0,g:0},{id:"SB-1003",name:"Karthik",block:"Hostel A",pts:0,drops:0,g:0},{id:"SB-1004",name:"Divya",block:"ECE Block",pts:0,drops:0,g:0},{id:"SB-1005",name:"Rohan",block:"Mech Block",pts:0,drops:0,g:0}],
- sel:"SB-1001",bin:"Canteen",bins:b,led:[],day:"",today:{},out:{ok:0,wrong:0,locked:0},cat:{Wet:0,Dry:0,Recyclable:0,"E-waste":0}}}
+ sel:"SB-1001",bin:"Canteen",bins:b,hist:hs,t:0,voice:true,led:[],day:"",today:{},out:{ok:0,wrong:0,locked:0},cat:{Wet:0,Dry:0,Recyclable:0,"E-waste":0}}}
 let S=load(),session=false,tab="s";
 function load(){try{const r=localStorage.getItem(KEY);if(r)return Object.assign(fresh(),JSON.parse(r))}catch(e){}return fresh()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const stu=()=>S.students.find(s=>s.id===S.sel)||S.students[0];
 const tm=()=>new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
-function lcd(a,b,c){$("lcd").className="lcd "+(c||"");$("lcd").innerHTML=`<b>${esc(a)}</b><small>${esc(b||"")}</small>`}
+const clock=t=>{const m=480+Math.round(t);return String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0")};
+function rec(b,c){const h=S.hist[b][c];h.push([S.t,S.bins[b][c]]);if(h.length>6)h.shift()}
+function eta(b,c){const p=S.bins[b][c];if(p>=95)return 0;const f=S.hist[b][c][0],dt=(S.t-f[0])/60;if(dt<0.02||p-f[1]<=0)return null;const r=(p-f[1])/dt;return r<=0.05?null:(95-p)/r}
+function fmt(h){if(h===null)return"no trend yet";if(h<=0)return"now";const m=Math.round(h*60);if(m<1)return"under 1 min";if(m<60)return m+" min";if(m>=2880)return"over 2 days";return Math.floor(m/60)+" h "+(m%60)+" min"}
+function etaMsg(b,c){const h=eta(b,c);return h===null||h<=0?"":" Full in about "+fmt(h)+"."}
+function speak(t){if(!S.voice||!("speechSynthesis" in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t.replace(/(\d+)\s*g\b/g,"$1 grams").replace(/\bpts\b/g,"points").replace(/(\d+) h /g,"$1 hours ").replace(/(\d+) min\b/g,"$1 minutes").replace(/%/g," percent").replace(/EP-/g,"E P "));u.lang="en-IN";speechSynthesis.speak(u)}catch(e){}}
+function voiceBtn(){if(!("speechSynthesis" in window)){$("vc").style.display="none";return}$("vc").textContent="Voice: "+(S.voice?"On":"Off");$("vc").setAttribute("aria-pressed",String(!!S.voice))}
+function lcd(a,b,c){speak(a+". "+(b||""));$("lcd").className="lcd "+(c||"");$("lcd").innerHTML=`<b>${esc(a)}</b><small>${esc(b||"")}</small>`}
 function log(h){S.led.unshift(`${tm()} ${h}`);S.led=S.led.slice(0,40)}
 function state(v){return v>=95?"locked":v>=80?"almost":"open"}
 function dayReset(){const d=new Date().toDateString();if(S.day!==d){S.day=d;S.today={}}}
 function tapCard(){session=true;const s=stu();lcd(`Hello ${s.name}`,`${S.bin} bin ready. Pick the lid for your item.`);render()}
 function drop(cat){
  if(!session){lcd("Tap your ID card first","Lids stay closed until a card is read.","no");return}
- dayReset();const s=stu(),it=ITEMS[+$("itm").value],box=S.bins[S.bin];
+ dayReset();S.t+=3+Math.floor(Math.random()*7);const s=stu(),it=ITEMS[+$("itm").value],box=S.bins[S.bin];
  if(box[cat]>=95){S.out.locked++;lcd(`${cat} compartment full`,"Lid locked. Use the next nearest bin. Alert sent.","no");log(`<span class="x">${esc(S.bin)}: ${cat} lid locked, ${esc(s.name)} turned away</span>`);render();return}
  const g=Math.max(5,Math.round(it[3]*(0.85+Math.random()*0.3)));
  if(it[2]!==cat){S.out.wrong++;lcd(`Wrong compartment`,`Sensor detected ${it[0]} (${it[2]}, ${g} g). Remove it, use the ${it[2]} lid. 0 points.`,"no");
   log(`<span class="x">${esc(s.name)} @ ${esc(S.bin)}: ${it[0]} rejected from ${cat} (0 pts)</span>`);save();render();return}
  let p=BASE[cat]+Math.floor(g/50),left=CAP-(S.today[s.id]||0),note="";
  if(p>left){p=Math.max(0,left);note=" Daily cap reached."}
- s.pts+=p;s.drops++;s.g+=g;S.out.ok++;S.cat[cat]+=g;S.today[s.id]=(S.today[s.id]||0)+p;box[cat]=Math.min(100,box[cat]+Math.max(1,g/25));
- lcd(`+${p} points`,`${it[0]} (${cat}, ${g} g) verified.${note} ${Math.round(box[cat])}% full.`);
+ s.pts+=p;s.drops++;s.g+=g;S.out.ok++;S.cat[cat]+=g;S.today[s.id]=(S.today[s.id]||0)+p;box[cat]=Math.min(100,box[cat]+Math.max(1,g/25));rec(S.bin,cat);
+ lcd(`+${p} points`,`${it[0]} (${cat}, ${g} g) verified.${note} ${Math.round(box[cat])}% full.${etaMsg(S.bin,cat)}`);
  log(`<span class="ok">${esc(s.name)} @ ${esc(S.bin)}: ${it[0]} ${g} g in ${cat} (+${p})</span>`);
  save();render();
 }
@@ -195,11 +204,11 @@ function render(){
  $("stu").innerHTML=S.students.map(x=>`<option value="${x.id}"${x.id===S.sel?" selected":""}>${esc(x.name)} (${x.id})</option>`).join("");
  if(!$("itm").options.length)$("itm").innerHTML=ITEMS.map((x,i)=>`<option value="${i}">${x[1]} ${x[0]}</option>`).join("");
  const box=S.bins[S.bin];
- $("cmps").innerHTML=CATS.map(c=>{const v=Math.round(box[c]),st=state(v);
-  return `<div class="cmp"><div class="tank"><i class="${st}" style="height:${v}%"></i></div><b>${v}%</b><span>${ICON[c]} ${c}</span><small>${st==="locked"?"Lid locked":st==="almost"?"Almost full":"Lid ready"}</small><button class="lid b-${c}" data-lid="${c}"${st==="locked"?" disabled":""}>Drop here</button></div>`}).join("");
+ $("cmps").innerHTML=CATS.map(c=>{const v=Math.round(box[c]),st=state(v),h=eta(S.bin,c),soon=h!==null&&h>0&&h<1,et=v>=95?"Full now":h===null?"No trend yet":"Full in ~"+fmt(h);
+  return `<div class="cmp"><div class="tank"><i class="${st}" style="height:${v}%"></i></div><b>${v}%</b><span>${ICON[c]} ${c}</span><small>${st==="locked"?"Lid locked":st==="almost"?"Almost full":"Lid ready"}</small><small class="eta${soon?" soon":""}">${et}</small><button class="lid b-${c}" data-lid="${c}"${st==="locked"?" disabled":""}>Drop here</button></div>`}).join("");
  const al=[];BINS.forEach(b=>CATS.forEach(c=>{const v=Math.round(S.bins[b][c]);if(v>=80)al.push([b,c,v])}));
  $("alerts").innerHTML=al.length?al.sort((a,b)=>b[2]-a[2]).map(a=>`<div class="al"><span>${esc(a[0])}: ${a[1]} <em class="${a[2]>=95?"l":"a"}">${a[2]}%</em></span><button data-emp="${esc(a[0])}|${a[1]}">Mark emptied</button></div>`).join(""):`<p style="color:var(--mut)">All compartments are below 80%. No collection needed.</p>`;
- $("whoH").textContent=`${s.name}’s wallet`;$("s1").textContent=s.pts;$("s2").textContent=s.drops;$("s3").textContent=(s.g>=1000?(s.g/1000).toFixed(1)+" kg":s.g+" g");
+ $("clk").textContent="Bin clock "+clock(S.t)+" (simulated)";voiceBtn();$("whoH").textContent=`${s.name}’s wallet`;$("s1").textContent=s.pts;$("s2").textContent=s.drops;$("s3").textContent=(s.g>=1000?(s.g/1000).toFixed(1)+" kg":s.g+" g");
  dayReset();$("cap").textContent=`Earned today: ${S.today[s.id]||0} of ${CAP} points (daily cap stops misuse).`;
  $("rewards").innerHTML=REW.map((r,i)=>`<div class="rw"><span>${r[0]}<br><small style="color:var(--mut)">${r[1]} points</small></span><button data-r="${i}"${s.pts<r[1]?" disabled":""}>${s.pts<r[1]?(r[1]-s.pts)+" to go":"Redeem"}</button></div>`).join("");
  $("lb").innerHTML=board().map((r,i)=>`<li class="rowl${r.me?" me":""}"><span class="rk">${i+1}</span><span class="nm">${esc(r.t)} <small>${esc(r.s)}</small></span><b>${r.p}</b></li>`).join("");
@@ -226,8 +235,9 @@ $("tap").onclick=tapCard;
 $("rm").onclick=()=>{session=false;lcd("Card removed","Lids are closed. Tap a card to start.")};
 $("cmps").onclick=e=>{const b=e.target.closest("button[data-lid]");if(b)drop(b.dataset.lid)};
 $("rewards").onclick=e=>{const b=e.target.closest("button[data-r]");if(b)redeem(+b.dataset.r)};
-$("alerts").onclick=e=>{const b=e.target.closest("button[data-emp]");if(!b)return;const[n,c]=b.dataset.emp.split("|");S.bins[n][c]=0;log(`Staff emptied ${esc(n)}: ${c} compartment`);save();render()};
-$("busy").onclick=()=>{BINS.forEach(b=>CATS.forEach(c=>S.bins[b][c]=Math.min(100,S.bins[b][c]+10+Math.random()*25)));log("Busy hour simulated across all bins");save();lcd("Busy hour simulated","Check the collection alerts.","warn");render()};
+$("alerts").onclick=e=>{const b=e.target.closest("button[data-emp]");if(!b)return;const[n,c]=b.dataset.emp.split("|");S.bins[n][c]=0;S.hist[n][c]=[[S.t,0]];log(`Staff emptied ${esc(n)}: ${c} compartment`);save();render()};
+$("vc").onclick=()=>{S.voice=!S.voice;save();if(S.voice)speak("Voice announcements on");else if("speechSynthesis" in window)speechSynthesis.cancel();voiceBtn()};
+$("busy").onclick=()=>{S.t+=60;BINS.forEach(b=>CATS.forEach(c=>{S.bins[b][c]=Math.min(100,S.bins[b][c]+10+Math.random()*25);rec(b,c)}));log("Busy hour simulated across all bins (clock +1 h)");save();lcd("Busy hour simulated","Check the collection alerts.","warn");render()};
 $("reg").onclick=()=>{const n=$("nn").value.trim();if(!n){$("nn").focus();return}
  const id="SB-"+(1001+S.students.length);S.students.push({id,name:n,block:$("nb").value,pts:0,drops:0,g:0});S.sel=id;session=false;$("nn").value="";log(`${esc(n)} registered ID ${id}`);save();lcd(`ID ${id} issued`,`Welcome ${n}. Press Tap ID card.`);render()};
 [["t1","s"],["t2","b"]].forEach(([id,v])=>$(id).onclick=()=>{tab=v;$("t1").setAttribute("aria-selected",v==="s");$("t2").setAttribute("aria-selected",v==="b");render()});

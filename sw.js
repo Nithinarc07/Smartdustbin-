@@ -1,5 +1,5 @@
 // Service worker: lets the app open offline. Network first, so updates appear quickly.
-const CACHE = 'smartbin-v1';
+const CACHE = 'smartbin-v2';
 const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
