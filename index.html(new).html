@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SmartBin Rewards: points from the dustbin itself</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#eaf1ee;--surf:#fff;--ink:#12312a;--mut:#5b7168;--line:#d3e0da;--brand:#1f8a5b;--sun:#f2b632;--sunink:#5a3d00;--bad:#c62828;--good:#1b7f4f;--warn:#e08a00;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1b17;--surf:#162822;--ink:#e6f2ed;--mut:#9bb5aa;--line:#27423a;--brand:#3ec486;--bad:#ff8a80;--good:#5fe0a5;--warn:#ffb02e}}
+:root[data-theme="dark"]{--bg:#0e1b17;--surf:#162822;--ink:#e6f2ed;--mut:#9bb5aa;--line:#27423a;--brand:#3ec486;--bad:#ff8a80;--good:#5fe0a5;--warn:#ffb02e}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:1150px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:clamp(28px,5vw,42px);line-height:1.05;margin:0;font-weight:800;letter-spacing:-.02em}
+h2{font-size:19px;margin:0 0 10px;font-weight:600}
+p{margin:0}.sub{color:var(--mut);margin-top:6px;max-width:68ch}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+.flow{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px;font-size:14px;color:var(--mut)}
+.flow span{background:var(--surf);border:1px solid var(--line);border-radius:20px;padding:3px 12px}
+.grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.box{background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:18px}
+.stack{display:flex;flex-direction:column;gap:16px}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 12px;width:100%}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:9px 14px;font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.go{background:var(--brand);color:#fff}
+.ghost{background:var(--bg);color:var(--ink)}
+.lcd{background:#0a1f17;color:#7dffb5;border-radius:12px;padding:14px 16px;min-height:96px;border:3px solid #26453a;font-family:ui-monospace,Menlo,Consolas,monospace}
+.lcd b{display:block;font-size:19px}.lcd.no{color:#ff9d94}.lcd.warn{color:#ffd27a}
+.lcd small{color:inherit;opacity:.8}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+@media(max-width:560px){.pick{grid-template-columns:1fr}}
+.row2{display:flex;gap:8px;margin-top:8px}
+label{font-size:14px;color:var(--mut);display:block;margin-bottom:3px}
+.cmps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+@media(max-width:560px){.cmps{grid-template-columns:repeat(2,1fr)}}
+.cmp{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.tank{width:56px;height:120px;border:3px solid var(--line);border-radius:6px 6px 12px 12px;display:flex;align-items:flex-end;overflow:hidden;background:var(--bg)}
+.tank i{display:block;width:100%;transition:height .5s;background:var(--brand)}
+.tank i.almost{background:var(--warn)}.tank i.locked{background:var(--bad)}
+.cmp small{color:var(--mut);font-size:13px;min-height:20px}
+.lid{width:100%;color:#fff;padding:8px 4px}
+.lid:disabled{opacity:.45;cursor:not-allowed}
+.b-Wet{background:#2e7d32}.b-Dry{background:#1565c0}.b-Recyclable{background:#c46f00}.b-E-waste{background:#7b1fa2}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats div{background:var(--bg);border-radius:12px;padding:8px 2px}.stats b{display:block;font-size:22px}.stats span{color:var(--mut);font-size:13px}
+.tabs{display:flex;gap:6px;margin-bottom:8px}.tabs button{background:var(--bg);color:var(--mut)}.tabs button[aria-selected="true"]{background:var(--ink);color:var(--surf)}
+ol,ul{list-style:none;margin:0;padding:0}
+.rowl{display:flex;align-items:center;gap:10px;padding:7px 6px;border-bottom:1px solid var(--line)}.rowl:last-child{border:0}
+.rowl .rk{width:24px;font-weight:800;color:var(--mut)}.rowl .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nm small{color:var(--mut)}
+.rowl.me{background:color-mix(in srgb,var(--sun) 28%,transparent);border-radius:10px}
+.al{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:15px}.al:last-child{border:0}
+.al em{font-style:normal;font-weight:700}.al em.l{color:var(--bad)}.al em.a{color:var(--warn)}
+.al button{background:var(--sun);color:var(--sunink);padding:5px 10px}
+.rw{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}.rw:last-child{border:0}
+.rw button{background:var(--sun);color:var(--sunink)}.rw button:disabled{background:var(--bg);color:var(--mut);cursor:not-allowed}
+.led{max-height:230px;overflow:auto;font-size:14px;color:var(--mut)}.led li{padding:4px 0;border-bottom:1px dashed var(--line)}
+.ok{color:var(--good)}.x{color:var(--bad)}
+.dash{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:860px){.dash{grid-template-columns:1fr}}
+.plot{position:relative;height:150px;display:flex;gap:14px;align-items:flex-end;border-bottom:2px solid var(--line);margin-top:8px}
+.plot .ln{position:absolute;left:0;right:0;height:0;border-top:2px dashed var(--warn);pointer-events:none}
+.plot .ln.r{border-color:var(--bad)}
+.grp{flex:1;display:flex;gap:3px;align-items:flex-end;height:100%}
+.col{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;font-size:11px;color:var(--mut)}
+.col i{display:block;width:100%;border-radius:4px 4px 0 0;min-height:2px}
+.lbls{display:flex;gap:14px;margin-top:4px}.lbls span{flex:1;text-align:center;font-size:13px;color:var(--mut)}
+.key{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:13px;color:var(--mut)}.key i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.hb{display:grid;grid-template-columns:90px 1fr 64px;gap:8px;align-items:center;margin:6px 0;font-size:14px}
+.hb>div{background:var(--bg);border-radius:6px;height:14px;overflow:hidden}.hb>div i{display:block;height:100%;transition:width .4s}.hb b{text-align:right}
+.stk{display:flex;height:22px;border-radius:8px;overflow:hidden;background:var(--bg)}.stk i{display:block;height:100%;transition:width .4s}
+.foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px;color:var(--mut);font-size:14px}
+.foot button{background:transparent;color:var(--mut);text-decoration:underline;padding:0}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>SmartBin Rewards</h1>
+      <p class="sub">Points are earned at the dustbin. The bin reads your ID card, its sensors check what you threw and where, and only correct segregation is rewarded.</p>
+    </div>
+    <div style="min-width:220px"><label for="binSel">You are standing at</label><select id="binSel"></select></div>
+  </div>
+  <div class="flow" aria-label="How a drop is processed"><span>ID card tap</span><span>Lid opens</span><span>Sensors identify item and weight</span><span>Matches compartment?</span><span>Points credited</span><span>Fill level updates</span><span>Collection alert</span></div>
+
+  <div class="grid">
+    <div class="stack">
+      <div class="box">
+        <h2>Bin station</h2>
+        <div class="lcd" id="lcd" role="status" aria-live="polite"><b>Tap your ID card</b><small>Choose a student below, then press Tap ID card.</small></div>
+        <div class="pick">
+          <div><label for="stu">Student ID card</label><select id="stu"></select><div class="row2"><button class="go" id="tap">Tap ID card</button><button class="ghost" id="rm">Remove card</button></div></div>
+          <div><label for="itm">Item you are holding</label><select id="itm"></select><p style="color:var(--mut);font-size:13px;margin-top:6px">The bin’s sensor decides what the item really is. You only choose a lid.</p></div>
+        </div>
+        <div class="cmps" id="cmps"></div>
+      </div>
+      <div class="box">
+        <h2>Collection alerts (all bins)</h2>
+        <div id="alerts"></div>
+        <div class="row2"><button class="ghost" id="busy">Simulate a busy hour</button></div>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="box">
+        <h2 id="whoH">Wallet</h2>
+        <div class="stats"><div><b id="s1">0</b><span>points</span></div><div><b id="s2">0</b><span>drops</span></div><div><b id="s3">0 g</b><span>waste sorted</span></div></div>
+        <p style="color:var(--mut);font-size:13px;margin-top:8px" id="cap"></p>
+        <div id="rewards" style="margin-top:6px"></div>
+      </div>
+      <div class="box">
+        <h2>Leaderboard</h2>
+        <div class="tabs" role="tablist"><button role="tab" id="t1" aria-selected="true">Students</button><button role="tab" id="t2" aria-selected="false">Blocks</button></div>
+        <ol id="lb"></ol>
+      </div>
+      <div class="box">
+        <h2>Register a new ID card</h2>
+        <div class="row2"><input id="nn" placeholder="Name" maxlength="24" aria-label="Name"><select id="nb" aria-label="Block" style="width:auto"><option>ECE Block</option><option>CSE Block</option><option>Mech Block</option><option>Hostel A</option></select><button class="go" id="reg">Add</button></div>
+      </div>
+      <div class="box">
+        <h2>Bin transaction log</h2>
+        <ul class="led" id="led"></ul>
+      </div>
+    </div>
+  </div>
+  <div class="dash">
+  <div class="box"><h2>Fill levels across the campus</h2><div id="c1"></div><p style="font-size:13px;color:var(--mut);margin-top:8px">Orange dashed line: 80% collection alert. Red dashed line: 95% lid lock.</p></div>
+  <div class="stack">
+    <div class="box"><h2>Points by block</h2><div id="c2"></div></div>
+    <div class="box"><h2>Waste sorted by type</h2><div id="c3"></div></div>
+    <div class="box"><h2>Drop outcomes</h2><div id="c4"></div></div>
+  </div>
+</div>
+  <div class="foot"><span>Sensor readings are simulated. Data saves in this browser only.</span><button id="reset">Reset demo</button></div>
+</div>
+<script>
+const CATS=["Wet","Dry","Recyclable","E-waste"],ICON={Wet:"🍃",Dry:"📄",Recyclable:"♻️","E-waste":"🔋"};
+const BASE={Wet:5,Dry:3,Recyclable:10,"E-waste":25},CAP=150;
+const ITEMS=[["Banana peel","🍌","Wet",120],["Leftover rice","🍚","Wet",250],["Tea bag","🍵","Wet",40],["Chips wrapper","🍟","Dry",15],["Used tissue","🧻","Dry",10],["Ice cream stick","🍦","Dry",8],["Plastic bottle","🧴","Recyclable",25],["Aluminium can","🥫","Recyclable",15],["Old newspaper","📰","Recyclable",180],["Dead battery","🔋","E-waste",45],["Broken earphones","🎧","E-waste",30],["Old charger cable","🔌","E-waste",60]];
+const REW=[["Canteen snack coupon",80],["Free stationery pack",150],["Sapling planted in your name",250]];
+const BINS=["Canteen","Library","ECE Block","Hostel A"],KEY="smartbin_rewards_v3";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function fresh(){const b={};BINS.forEach((n,i)=>{b[n]={};CATS.forEach((c,j)=>b[n][c]=0)});
+ return{students:[{id:"SB-1001",name:"Aarav",block:"CSE Block",pts:0,drops:0,g:0},{id:"SB-1002",name:"Meera",block:"ECE Block",pts:0,drops:0,g:0},{id:"SB-1003",name:"Karthik",block:"Hostel A",pts:0,drops:0,g:0},{id:"SB-1004",name:"Divya",block:"ECE Block",pts:0,drops:0,g:0},{id:"SB-1005",name:"Rohan",block:"Mech Block",pts:0,drops:0,g:0}],
+ sel:"SB-1001",bin:"Canteen",bins:b,led:[],day:"",today:{},out:{ok:0,wrong:0,locked:0},cat:{Wet:0,Dry:0,Recyclable:0,"E-waste":0}}}
+let S=load(),session=false,tab="s";
+function load(){try{const r=localStorage.getItem(KEY);if(r)return Object.assign(fresh(),JSON.parse(r))}catch(e){}return fresh()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const stu=()=>S.students.find(s=>s.id===S.sel)||S.students[0];
+const tm=()=>new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+function lcd(a,b,c){$("lcd").className="lcd "+(c||"");$("lcd").innerHTML=`<b>${esc(a)}</b><small>${esc(b||"")}</small>`}
+function log(h){S.led.unshift(`${tm()} ${h}`);S.led=S.led.slice(0,40)}
+function state(v){return v>=95?"locked":v>=80?"almost":"open"}
+function dayReset(){const d=new Date().toDateString();if(S.day!==d){S.day=d;S.today={}}}
+function tapCard(){session=true;const s=stu();lcd(`Hello ${s.name}`,`${S.bin} bin ready. Pick the lid for your item.`);render()}
+function drop(cat){
+ if(!session){lcd("Tap your ID card first","Lids stay closed until a card is read.","no");return}
+ dayReset();const s=stu(),it=ITEMS[+$("itm").value],box=S.bins[S.bin];
+ if(box[cat]>=95){S.out.locked++;lcd(`${cat} compartment full`,"Lid locked. Use the next nearest bin. Alert sent.","no");log(`<span class="x">${esc(S.bin)}: ${cat} lid locked, ${esc(s.name)} turned away</span>`);render();return}
+ const g=Math.max(5,Math.round(it[3]*(0.85+Math.random()*0.3)));
+ if(it[2]!==cat){S.out.wrong++;lcd(`Wrong compartment`,`Sensor detected ${it[0]} (${it[2]}, ${g} g). Remove it, use the ${it[2]} lid. 0 points.`,"no");
+  log(`<span class="x">${esc(s.name)} @ ${esc(S.bin)}: ${it[0]} rejected from ${cat} (0 pts)</span>`);save();render();return}
+ let p=BASE[cat]+Math.floor(g/50),left=CAP-(S.today[s.id]||0),note="";
+ if(p>left){p=Math.max(0,left);note=" Daily cap reached."}
+ s.pts+=p;s.drops++;s.g+=g;S.out.ok++;S.cat[cat]+=g;S.today[s.id]=(S.today[s.id]||0)+p;box[cat]=Math.min(100,box[cat]+Math.max(1,g/25));
+ lcd(`+${p} points`,`${it[0]} (${cat}, ${g} g) verified.${note} ${Math.round(box[cat])}% full.`);
+ log(`<span class="ok">${esc(s.name)} @ ${esc(S.bin)}: ${it[0]} ${g} g in ${cat} (+${p})</span>`);
+ save();render();
+}
+function redeem(i){const s=stu(),r=REW[i];if(s.pts<r[1])return;s.pts-=r[1];
+ const code="EP-"+Math.random().toString(36).slice(2,6).toUpperCase();
+ lcd(`Redeemed: ${r[0]}`,`Coupon code ${code}. Show it at the collection desk.`);log(`${esc(s.name)} redeemed ${r[0]} (-${r[1]}), code ${code}`);save();render()}
+function board(){
+ if(tab==="s")return S.students.slice().sort((a,b)=>b.pts-a.pts).slice(0,8).map(r=>({t:r.name,s:r.block,p:r.pts,me:r.id===S.sel}));
+ const m={};S.students.forEach(r=>m[r.block]=(m[r.block]||0)+r.pts);const mb=stu().block;
+ return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(e=>({t:e[0],s:"",p:e[1],me:e[0]===mb}));
+}
+function render(){
+ const s=stu();
+ $("binSel").innerHTML=BINS.map(b=>`<option${b===S.bin?" selected":""}>${b}</option>`).join("");
+ $("stu").innerHTML=S.students.map(x=>`<option value="${x.id}"${x.id===S.sel?" selected":""}>${esc(x.name)} (${x.id})</option>`).join("");
+ if(!$("itm").options.length)$("itm").innerHTML=ITEMS.map((x,i)=>`<option value="${i}">${x[1]} ${x[0]}</option>`).join("");
+ const box=S.bins[S.bin];
+ $("cmps").innerHTML=CATS.map(c=>{const v=Math.round(box[c]),st=state(v);
+  return `<div class="cmp"><div class="tank"><i class="${st}" style="height:${v}%"></i></div><b>${v}%</b><span>${ICON[c]} ${c}</span><small>${st==="locked"?"Lid locked":st==="almost"?"Almost full":"Lid ready"}</small><button class="lid b-${c}" data-lid="${c}"${st==="locked"?" disabled":""}>Drop here</button></div>`}).join("");
+ const al=[];BINS.forEach(b=>CATS.forEach(c=>{const v=Math.round(S.bins[b][c]);if(v>=80)al.push([b,c,v])}));
+ $("alerts").innerHTML=al.length?al.sort((a,b)=>b[2]-a[2]).map(a=>`<div class="al"><span>${esc(a[0])}: ${a[1]} <em class="${a[2]>=95?"l":"a"}">${a[2]}%</em></span><button data-emp="${esc(a[0])}|${a[1]}">Mark emptied</button></div>`).join(""):`<p style="color:var(--mut)">All compartments are below 80%. No collection needed.</p>`;
+ $("whoH").textContent=`${s.name}’s wallet`;$("s1").textContent=s.pts;$("s2").textContent=s.drops;$("s3").textContent=(s.g>=1000?(s.g/1000).toFixed(1)+" kg":s.g+" g");
+ dayReset();$("cap").textContent=`Earned today: ${S.today[s.id]||0} of ${CAP} points (daily cap stops misuse).`;
+ $("rewards").innerHTML=REW.map((r,i)=>`<div class="rw"><span>${r[0]}<br><small style="color:var(--mut)">${r[1]} points</small></span><button data-r="${i}"${s.pts<r[1]?" disabled":""}>${s.pts<r[1]?(r[1]-s.pts)+" to go":"Redeem"}</button></div>`).join("");
+ $("lb").innerHTML=board().map((r,i)=>`<li class="rowl${r.me?" me":""}"><span class="rk">${i+1}</span><span class="nm">${esc(r.t)} <small>${esc(r.s)}</small></span><b>${r.p}</b></li>`).join("");
+ $("led").innerHTML=S.led.length?S.led.map(t=>`<li>${t}</li>`).join(""):"<li>No drops yet. Tap a card and use a lid.</li>";
+ charts();
+}
+const CC={Wet:"#2e7d32",Dry:"#1565c0",Recyclable:"#e08a00","E-waste":"#8e24aa"};
+function hbars(id,rows,col,u){const mx=Math.max(1,...rows.map(r=>r[1]));
+ $(id).innerHTML=rows.map(r=>`<div class="hb"><span>${esc(r[0])}</span><div><i style="width:${r[1]*100/mx}%;background:${col||CC[r[0]]}"></i></div><b>${r[1]}${u}</b></div>`).join("")}
+function charts(){
+ let h='<div class="plot"><i class="ln" style="bottom:80%"></i><i class="ln r" style="bottom:95%"></i>';
+ BINS.forEach(b=>{h+='<div class="grp">'+CATS.map(c=>{const v=Math.round(S.bins[b][c]);return `<div class="col" title="${c} ${v}%"><i style="height:${v}%;background:${CC[c]}"></i></div>`}).join("")+'</div>'});
+ h+='</div><div class="lbls">'+BINS.map(b=>`<span>${esc(b)}</span>`).join("")+'</div><div class="key">'+CATS.map(c=>`<span><i style="background:${CC[c]}"></i>${c}</span>`).join("")+'</div>';
+ $("c1").innerHTML=h;
+ const m={};S.students.forEach(r=>m[r.block]=(m[r.block]||0)+r.pts);
+ hbars("c2",Object.entries(m).sort((a,b)=>b[1]-a[1]),"#1f8a5b","");
+ hbars("c3",CATS.map(c=>[c,Math.round(S.cat[c])]),null," g");
+ const o=S.out,t=(o.ok+o.wrong+o.locked)||1;
+ $("c4").innerHTML=`<div class="stk"><i style="width:${o.ok*100/t}%;background:#1b7f4f"></i><i style="width:${o.wrong*100/t}%;background:#c62828"></i><i style="width:${o.locked*100/t}%;background:#e08a00"></i></div><div class="key"><span><i style="background:#1b7f4f"></i>Accepted ${o.ok}</span><span><i style="background:#c62828"></i>Wrong lid ${o.wrong}</span><span><i style="background:#e08a00"></i>Lid locked ${o.locked}</span></div><p style="color:var(--mut);font-size:14px;margin-top:6px">${(o.ok+o.wrong+o.locked)?"Accuracy: "+Math.round(o.ok*100/t)+"% of "+t+" drops":"No drops yet. The charts fill as you use the bins."}</p>`;
+}
+$("binSel").onchange=e=>{S.bin=e.target.value;save();lcd("Moved to "+S.bin,"Tap your ID card to continue.");session=false;render()};
+$("stu").onchange=e=>{S.sel=e.target.value;session=false;save();lcd("Tap your ID card","Card changed. Press Tap ID card.");render()};
+$("tap").onclick=tapCard;
+$("rm").onclick=()=>{session=false;lcd("Card removed","Lids are closed. Tap a card to start.")};
+$("cmps").onclick=e=>{const b=e.target.closest("button[data-lid]");if(b)drop(b.dataset.lid)};
+$("rewards").onclick=e=>{const b=e.target.closest("button[data-r]");if(b)redeem(+b.dataset.r)};
+$("alerts").onclick=e=>{const b=e.target.closest("button[data-emp]");if(!b)return;const[n,c]=b.dataset.emp.split("|");S.bins[n][c]=0;log(`Staff emptied ${esc(n)}: ${c} compartment`);save();render()};
+$("busy").onclick=()=>{BINS.forEach(b=>CATS.forEach(c=>S.bins[b][c]=Math.min(100,S.bins[b][c]+10+Math.random()*25)));log("Busy hour simulated across all bins");save();lcd("Busy hour simulated","Check the collection alerts.","warn");render()};
+$("reg").onclick=()=>{const n=$("nn").value.trim();if(!n){$("nn").focus();return}
+ const id="SB-"+(1001+S.students.length);S.students.push({id,name:n,block:$("nb").value,pts:0,drops:0,g:0});S.sel=id;session=false;$("nn").value="";log(`${esc(n)} registered ID ${id}`);save();lcd(`ID ${id} issued`,`Welcome ${n}. Press Tap ID card.`);render()};
+[["t1","s"],["t2","b"]].forEach(([id,v])=>$(id).onclick=()=>{tab=v;$("t1").setAttribute("aria-selected",v==="s");$("t2").setAttribute("aria-selected",v==="b");render()});
+$("reset").onclick=()=>{S=fresh();session=false;save();lcd("Demo reset","Tap your ID card to start.");render()};
+render();
+</script>
+</body>
+</html>
